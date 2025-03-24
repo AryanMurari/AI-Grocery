@@ -1,4 +1,3 @@
-
 export interface Product {
   id: string;
   name: string;
@@ -21,14 +20,16 @@ export interface OrderItem {
   quantity: number;
 }
 
-// Mock product images
+// Mock product images - Using more realistic images
 const productImages = [
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
-  "/placeholder.svg",
+  "https://images.unsplash.com/photo-1519162808019-7de1683fa2ad?q=80&w=300&auto=format", // avocado
+  "https://images.unsplash.com/photo-1563636619-e9143da7973b?q=80&w=300&auto=format", // almond milk
+  "https://images.unsplash.com/photo-1598373182133-52452f7691ef?q=80&w=300&auto=format", // bread
+  "https://images.unsplash.com/photo-1598965402089-897e8f8db0c3?q=80&w=300&auto=format", // eggs
+  "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=300&auto=format", // salmon
+  "https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=300&auto=format", // spinach
+  "https://images.unsplash.com/photo-1571211905393-6de67ff8fb61?q=80&w=300&auto=format", // greek yogurt
+  "https://images.unsplash.com/photo-1586201375761-83865001e8ac?q=80&w=300&auto=format", // quinoa
 ];
 
 // Generate sample products

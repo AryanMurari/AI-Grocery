@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Product } from '@/lib/mockData';
 import { formatCurrency } from '@/lib/processingUtils';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface ProductCardProps {
   product: Product;
@@ -27,12 +28,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
       )}
       style={{ animationDelay: `${Math.random() * 0.3}s` }}
     >
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
-        />
+      <div className="relative overflow-hidden bg-gray-50">
+        <AspectRatio ratio={1/1}>
+          <img
+            src={product.image}
+            alt={product.name}
+            className="object-cover w-full h-full transition-transform duration-300 hover:scale-105"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder.svg';
+            }}
+          />
+        </AspectRatio>
         <div className="absolute top-2 right-2">
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-white bg-opacity-80 backdrop-blur-sm text-gray-700">
             {product.category}
