@@ -24,8 +24,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount }) => {
           
           <nav className="hidden md:flex space-x-8 ml-12">
             <a href="#" className="text-gray-700 hover:text-primary transition link-underline py-1">Products</a>
-            <a href="#" className="text-gray-700 hover:text-primary transition link-underline py-1">Categories</a>
-            <a href="#" className="text-gray-700 hover:text-primary transition link-underline py-1">About</a>
+            <a href="#about" className="text-gray-700 hover:text-primary transition link-underline py-1">About</a>
           </nav>
           
           <div className="flex items-center">

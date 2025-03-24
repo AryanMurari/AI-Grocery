@@ -6,6 +6,7 @@ import InputWithSpeech from '@/components/ui/input-with-speech';
 import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import RecommendationSection from '@/components/RecommendationSection';
+import AboutSection from '@/components/AboutSection';
 import { Button } from '@/components/ui/button';
 import { 
   Product, 
@@ -140,6 +141,9 @@ const Index = () => {
             />
           </div>
         </div>
+        
+        {/* About Section */}
+        <AboutSection />
       </main>
     </div>
   );
