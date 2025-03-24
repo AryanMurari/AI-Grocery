@@ -3,6 +3,7 @@ import React from 'react';
 import { ShoppingCart, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   cartItemCount: number;
@@ -17,14 +18,14 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount }) => {
             <Button variant="ghost" size="icon" className="mr-2 lg:hidden">
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
+            <Link to="/" className="text-xl md:text-2xl font-semibold tracking-tight no-underline">
               <span className="text-gradient">SmartGrocery</span>
-            </h1>
+            </Link>
           </div>
           
           <nav className="hidden md:flex space-x-8 ml-12">
-            <a href="#" className="text-gray-700 hover:text-primary transition link-underline py-1">Products</a>
-            <a href="#about" className="text-gray-700 hover:text-primary transition link-underline py-1">About</a>
+            <Link to="/" className="text-gray-700 hover:text-primary transition link-underline py-1">Products</Link>
+            <Link to="/about" className="text-gray-700 hover:text-primary transition link-underline py-1">About</Link>
           </nav>
           
           <div className="flex items-center">
