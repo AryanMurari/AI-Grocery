@@ -1,4 +1,3 @@
-
 import { Product, products } from './mockData';
 
 // This would be replaced by actual NLP/AI processing in a real app
@@ -44,9 +43,10 @@ export const processNaturalLanguageOrder = (input: string): {
 };
 
 export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
+  // No need to convert since prices are already in INR
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 2,
   }).format(amount);
 };

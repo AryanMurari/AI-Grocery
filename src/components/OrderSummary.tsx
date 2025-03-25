@@ -1,9 +1,9 @@
-
-import React from 'react';
-import { ShoppingBag, Package } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShoppingBag, Package, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { OrderItem } from '@/lib/mockData';
 import { formatCurrency, calculateTotalPrice } from '@/lib/processingUtils';
+import PaymentDialog from './PaymentDialog';
 
 interface OrderSummaryProps {
   items: OrderItem[];
@@ -16,6 +16,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   unmatchedItems,
   onClearOrder,
 }) => {
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const totalPrice = calculateTotalPrice(items);
   
   if (items.length === 0 && unmatchedItems.length === 0) {
@@ -81,10 +82,21 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
         )}
         
-        <Button className="w-full mt-4" disabled={items.length === 0}>
-          Checkout
+        <Button 
+          className="w-full mt-4" 
+          disabled={items.length === 0}
+          onClick={() => setPaymentDialogOpen(true)}
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          Pay
         </Button>
       </div>
+
+      <PaymentDialog 
+        open={paymentDialogOpen} 
+        onOpenChange={setPaymentDialogOpen}
+        totalAmount={totalPrice}
+      />
     </div>
   );
 };
