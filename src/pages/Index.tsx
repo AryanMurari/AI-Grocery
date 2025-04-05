@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
@@ -54,6 +53,33 @@ const Index = () => {
         ...prev,
         { product, quantity: 1 }
       ]);
+    }
+  };
+  
+  const handleIncrementQuantity = (product: Product) => {
+    // Update order items quantity
+    setOrderItems(prev => prev.map(item => 
+      item.product.id === product.id 
+        ? { ...item, quantity: item.quantity + 1 } 
+        : item
+    ));
+  };
+
+  const handleDecrementQuantity = (product: Product) => {
+    // Find the item in order items
+    const item = orderItems.find(item => item.product.id === product.id);
+
+    if (item && item.quantity > 1) {
+      // Decrease quantity if more than 1
+      setOrderItems(prev => prev.map(item => 
+        item.product.id === product.id 
+          ? { ...item, quantity: item.quantity - 1 } 
+          : item
+      ));
+    } else {
+      // Remove item if quantity is 1
+      setOrderItems(prev => prev.filter(item => item.product.id !== product.id));
+      setCartProducts(prev => prev.filter(p => p.id !== product.id));
     }
   };
   
@@ -114,20 +140,32 @@ const Index = () => {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {displayedProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    isInCart={cartProducts.some(p => p.id === product.id)}
-                    onAddToCart={handleAddToCart}
-                  />
-                ))}
+                {displayedProducts.map((product) => {
+                  const cartItem = orderItems.find(item => item.product.id === product.id);
+                  const isInCart = !!cartItem;
+                  const quantity = cartItem ? cartItem.quantity : 0;
+                  
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      isInCart={isInCart}
+                      quantity={quantity}
+                      onAddToCart={handleAddToCart}
+                      onIncrementQuantity={handleIncrementQuantity}
+                      onDecrementQuantity={handleDecrementQuantity}
+                    />
+                  );
+                })}
               </div>
               
               <RecommendationSection
                 products={recommendedProducts}
                 cartItems={cartProducts}
                 onAddToCart={handleAddToCart}
+                orderItems={orderItems}
+                onIncrementQuantity={handleIncrementQuantity}
+                onDecrementQuantity={handleDecrementQuantity}
               />
             </div>
           </div>

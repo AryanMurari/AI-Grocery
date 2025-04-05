@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Plus, Check } from 'lucide-react';
+import { Plus, Minus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Product } from '@/lib/mockData';
@@ -10,14 +9,20 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 interface ProductCardProps {
   product: Product;
   isInCart?: boolean;
+  quantity?: number;
   onAddToCart: (product: Product) => void;
+  onIncrementQuantity?: (product: Product) => void;
+  onDecrementQuantity?: (product: Product) => void;
   className?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isInCart = false,
+  quantity = 0,
   onAddToCart,
+  onIncrementQuantity,
+  onDecrementQuantity,
   className,
 }) => {
   return (
@@ -67,23 +72,37 @@ const ProductCard: React.FC<ProductCardProps> = ({
             ))}
           </div>
           
-          <Button
-            size="sm"
-            variant={isInCart ? "secondary" : "outline"}
-            className={cn(
-              "rounded-full",
-              isInCart && "bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700"
-            )}
-            onClick={() => onAddToCart(product)}
-            disabled={isInCart}
-          >
-            {isInCart ? (
-              <Check className="h-4 w-4 mr-1" />
-            ) : (
+          {!isInCart ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              onClick={() => onAddToCart(product)}
+            >
               <Plus className="h-4 w-4 mr-1" />
-            )}
-            {isInCart ? "Added" : "Add"}
-          </Button>
+              Add
+            </Button>
+          ) : (
+            <div className="flex items-center space-x-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 w-8 p-0 rounded-full"
+                onClick={() => onDecrementQuantity && onDecrementQuantity(product)}
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="w-6 text-center font-medium">{quantity}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 w-8 p-0 rounded-full"
+                onClick={() => onIncrementQuantity && onIncrementQuantity(product)}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

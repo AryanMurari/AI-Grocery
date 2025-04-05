@@ -1,19 +1,24 @@
-
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-import { Product } from '@/lib/mockData';
+import { Product, OrderItem } from '@/lib/mockData';
 import ProductCard from './ProductCard';
 
 interface RecommendationSectionProps {
   products: Product[];
   cartItems: Product[];
+  orderItems?: OrderItem[];
   onAddToCart: (product: Product) => void;
+  onIncrementQuantity?: (product: Product) => void;
+  onDecrementQuantity?: (product: Product) => void;
 }
 
 const RecommendationSection: React.FC<RecommendationSectionProps> = ({
   products,
   cartItems,
+  orderItems = [],
   onAddToCart,
+  onIncrementQuantity,
+  onDecrementQuantity,
 }) => {
   if (products.length === 0) return null;
   
@@ -25,14 +30,23 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            isInCart={cartItems.some(item => item.id === product.id)}
-            onAddToCart={onAddToCart}
-          />
-        ))}
+        {products.map((product) => {
+          const cartItem = orderItems.find(item => item.product.id === product.id);
+          const isInCart = !!cartItem || cartItems.some(item => item.id === product.id);
+          const quantity = cartItem ? cartItem.quantity : 0;
+          
+          return (
+            <ProductCard
+              key={product.id}
+              product={product}
+              isInCart={isInCart}
+              quantity={quantity}
+              onAddToCart={onAddToCart}
+              onIncrementQuantity={onIncrementQuantity}
+              onDecrementQuantity={onDecrementQuantity}
+            />
+          );
+        })}
       </div>
     </div>
   );

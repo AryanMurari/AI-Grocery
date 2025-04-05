@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { QrCode, MapPin, Check } from 'lucide-react';
+import UPIImage from '@/Assets/UPI.jpg';
 
 interface PaymentDialogProps {
   open: boolean;
@@ -69,18 +70,13 @@ const PaymentDialog: React.FC<PaymentDialogProps> = ({ open, onOpenChange, total
                   <h3 className="font-medium">UPI Payment</h3>
                 </div>
                 <div className="flex flex-col items-center">
-                  {/* This would be a real QR code in production */}
-                  <div className="w-48 h-48 bg-gray-100 border flex items-center justify-center mb-2">
-                    <div className="bg-white p-2 rounded">
-                      <div className="grid grid-cols-5 grid-rows-5 gap-1">
-                        {Array.from({ length: 25 }).map((_, i) => (
-                          <div 
-                            key={i} 
-                            className={`w-3 h-3 ${Math.random() > 0.5 ? 'bg-black' : 'bg-white'}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                  {/* UPI QR Code Image */}
+                  <div className="w-48 h-48 flex items-center justify-center mb-2 overflow-hidden">
+                    <img 
+                      src={UPIImage} 
+                      alt="UPI QR Code" 
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                   <p className="text-sm text-gray-600 text-center">
                     Scan this QR code using any UPI app to pay ₹{totalAmount.toFixed(2)}
