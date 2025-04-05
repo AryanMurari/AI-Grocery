@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
-import InputWithSpeech from '@/components/ui/input-with-speech';
+import InputWithCamera from '@/components/ui/input-with-camera';
 import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import RecommendationSection from '@/components/RecommendationSection';
@@ -110,7 +110,7 @@ const Index = () => {
             Smart Grocery Order Processing
           </h1>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Shop smarter with AI-powered grocery recommendations and natural language order processing.
+            Shop smarter with AI-powered grocery recommendations, image recognition, and natural language processing.
           </p>
         </div>
         
@@ -118,8 +118,8 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-8">
             <div className="glassmorphism rounded-xl p-6 animate-fade-in">
               <h2 className="text-xl font-medium mb-4">Create Your Order</h2>
-              <InputWithSpeech
-                label="Enter your grocery list in natural language"
+              <InputWithCamera
+                label="Enter your grocery list or use camera/image upload"
                 value={naturalLanguageInput}
                 onInputChange={(value) => setNaturalLanguageInput(value)}
                 className="mb-4"

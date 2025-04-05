@@ -32,9 +32,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             <h3 className="font-medium text-gray-900">Your Order</h3>
           </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 font-medium"
             onClick={onClearOrder}
           >
             Clear
