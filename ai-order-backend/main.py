@@ -4,7 +4,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
 import json
-import re
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -45,8 +44,7 @@ EXTRACT_PROMPT = PromptTemplate(
     input_variables=["context", "query"],
     template="""
 You are an AI grocery assistant.
-
-Given CONTEXT of available grocery products:
+Given the CONTEXT of available grocery products:
 {context}
 
 And a CUSTOMER QUERY:
@@ -59,11 +57,11 @@ Extract and return the order as a valid JSON list:
 ]
 
 Rules:
-- Default quantity to 1 if not specified.
-- Translate any language into English.
-- Correct spelling mistakes.
-- Only use available products.
-- No extra text, only JSON output.
+- Pick product names only from CONTEXT.
+- If quantity not mentioned, default to 1.
+- Translate any language to English.
+- Fix spelling mistakes.
+- Output only pure JSON. No extra text.
 """
 )
 
@@ -71,22 +69,22 @@ CORRECT_PROMPT = PromptTemplate(
     input_variables=["query"],
     template="""
 You are a smart corrector.
-Fix all spelling mistakes and translate this messy grocery order into clean English text.
-Only output the corrected text, no extra explanation.
+Fix all spelling mistakes and translate the grocery order into clean English.
+Only output corrected plain text, no extra explanation.
 
 Messy input:
 {query}
 """
 )
 
-extract_chain = EXTRACT_PROMPT | llm
+# === Setup LLM chains ===
 correct_chain = CORRECT_PROMPT | llm
 
-# === Helper to clean LLM output ===
-def clean_json_output(text: str) -> str:
-    text = text.strip()
-    text = re.sub(r"```json|```", "", text)  # remove markdown json fences if any
-    return text
+# === Helper functions ===
+def split_items(text):
+    for sep in [",", " and ", " aur ", "&", "\n"]:
+        text = text.replace(sep, "|")
+    return [item.strip() for item in text.split("|") if item.strip()]
 
 # === API endpoint ===
 @app.post("/process-order/")
@@ -94,28 +92,34 @@ async def process_order(req: OrderRequest):
     try:
         query = req.query
 
-        # Step 1: Similarity search from Chroma
-        similar_docs = vectordb.similarity_search(query, k=5)
+        # Step 1: Correct spelling, translate to English
+        corrected_query = correct_chain.invoke({"query": query}).content.strip()
 
-        if not similar_docs:
-            corrected_query = correct_chain.invoke({"query": query}).content.strip()
-            similar_docs = vectordb.similarity_search(corrected_query, k=5)
+        # Step 2: Split query into individual grocery items
+        items = split_items(corrected_query)
 
-            if not similar_docs:
-                raise HTTPException(status_code=404, detail="404: No matching products found.")
-            else:
+        final_results = []
+
+        # Step 3: Search and extract for each item
+        for item in items:
+            similar_docs = vectordb.similarity_search(item, k=5)
+            if similar_docs:
                 context = "\n".join(doc.page_content for doc in similar_docs)
-                inputs = {"context": context, "query": corrected_query}
-        else:
-            context = "\n".join(doc.page_content for doc in similar_docs)
-            inputs = {"context": context, "query": query}
+                inputs = {"context": context, "query": item}
+                formatted_prompt = EXTRACT_PROMPT.format_prompt(**inputs)
+                response_raw = llm.invoke(formatted_prompt).content.strip()
+                response_raw = response_raw.replace("```json", "").replace("```", "").strip()
+                try:
+                    response_json = json.loads(response_raw)
+                    if isinstance(response_json, list):
+                        final_results.extend(response_json)
+                except json.JSONDecodeError:
+                    continue  # skip invalid parse
 
-        # Step 2: Ask LLM to extract structured order
-        response_raw = extract_chain.invoke(inputs).content.strip()
-        response_clean = clean_json_output(response_raw)
-        response_json = json.loads(response_clean)
+        if not final_results:
+            raise HTTPException(status_code=404, detail="No matching products found.")
 
-        return {"result": response_json}
+        return {"result": final_results}
 
     except HTTPException as he:
         raise he
