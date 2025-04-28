@@ -1,11 +1,14 @@
 fastapi
 uvicorn
 python-dotenv
+requests
+
 langchain
 langchain-community
 langchain-openai
 chromadb
+
 openai
+pandas
 aiofiles
 aiosqlite
-requests
