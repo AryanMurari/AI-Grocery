@@ -1,9 +1,26 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Package, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { OrderItem } from '@/lib/mockData';
 import { formatCurrency, calculateTotalPrice } from '@/lib/processingUtils';
 import PaymentDialog from './PaymentDialog';
+
+// Define the interfaces that were previously imported from mockData
+interface Product {
+  id: string;
+  name?: string;
+  productname?: string;
+  price: number;
+  image?: string;
+  image_url?: string;
+  quantity?: string | number;
+  category?: string;
+  subcategory?: string;
+}
+
+interface OrderItem {
+  product: Product;
+  quantity: number;
+}
 
 interface OrderSummaryProps {
   items: OrderItem[];
@@ -22,11 +39,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
 }) => {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const totalPrice = calculateTotalPrice(items);
-  
+
   if (items.length === 0 && unmatchedItems.length === 0) {
     return null;
   }
-  
+
   return (
     <div className="glassmorphism rounded-xl overflow-hidden animate-fade-in">
       <div className="bg-primary bg-opacity-10 px-4 py-3 border-b border-primary border-opacity-20">
@@ -45,20 +62,20 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           </Button>
         </div>
       </div>
-      
+
       <div className="p-4">
         {items.length > 0 && (
           <div className="mb-4">
             <ul className="divide-y divide-gray-100">
-              {items.map((item) => (
-                <li key={item.product.id} className="py-2 flex justify-between items-center">
+              {items.map((item, index) => (
+                <li key={index} className="py-2 flex justify-between items-center">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 w-full">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs text-gray-700">
                         {item.quantity}
                       </span>
                       <span className="text-sm font-medium truncate">
-                        {item.product.name}
+                        {item.product.name || item.product.productname}
                         {item.product.quantity && (
                           <span className="ml-2 font-normal text-gray-700 whitespace-nowrap">| {item.product.quantity}</span>
                         )}
@@ -75,20 +92,20 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                       </Button>
                     </div>
                     <span className="text-sm font-semibold text-right min-w-[60px]">
-                      {formatCurrency(item.product.price * item.quantity)}
+                      {formatCurrency((item.product.price || 0) * item.quantity)}
                     </span>
                   </div>
                 </li>
               ))}
             </ul>
-            
+
             <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
               <span className="font-medium">Total</span>
               <span className="font-bold text-lg">{formatCurrency(totalPrice)}</span>
             </div>
           </div>
         )}
-        
+
         {unmatchedItems.length > 0 && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
             <h4 className="text-sm font-medium text-yellow-800 mb-1 flex items-center">
@@ -102,7 +119,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             </ul>
           </div>
         )}
-        
+
         <Button 
           className="w-full mt-4" 
           disabled={items.length === 0}

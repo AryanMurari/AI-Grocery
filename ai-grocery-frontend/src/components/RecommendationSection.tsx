@@ -1,7 +1,26 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
-import { Product, OrderItem } from '@/lib/mockData';
 import ProductCard from './ProductCard';
+
+interface Product {
+  id: string;
+  name?: string;
+  productname?: string;
+  price: number;
+  image?: string;
+  image_url?: string;
+  quantity?: string | number;
+  category?: string;
+  subcategory?: string;
+  description?: string;
+  tags?: string[];
+  inStock?: boolean;
+}
+
+interface OrderItem {
+  product: Product;
+  quantity: number;
+}
 
 interface RecommendationSectionProps {
   products: Product[];

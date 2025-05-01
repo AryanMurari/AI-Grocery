@@ -2,9 +2,24 @@ import React from 'react';
 import { Plus, Minus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Product } from '@/lib/mockData';
 import { formatCurrency } from '@/lib/processingUtils';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+
+// Define the Product interface that was previously imported from mockData
+interface Product {
+  id: string;
+  name?: string;
+  productname?: string;
+  price: number;
+  image?: string;
+  image_url?: string;
+  quantity?: string | number;
+  category?: string;
+  subcategory?: string;
+  description?: string;
+  tags?: string[];
+  inStock?: boolean;
+}
 
 interface ProductCardProps {
   product: Product;

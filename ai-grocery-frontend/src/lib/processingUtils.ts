@@ -1,4 +1,18 @@
-import { Product, products } from './mockData';
+// Define the Product interface locally
+interface Product {
+  id: string;
+  name?: string;
+  productname?: string;
+  price: number;
+  image?: string;
+  image_url?: string;
+  quantity?: string | number;
+  category?: string;
+  subcategory?: string;
+  description?: string;
+  tags?: string[];
+  inStock?: boolean;
+}
 
 // This would be replaced by actual NLP/AI processing in a real app
 export const processNaturalLanguageOrder = (input: string): { 
@@ -22,35 +36,25 @@ export const processNaturalLanguageOrder = (input: string): {
       itemName = quantityMatch[2];
     }
     
-    // Very basic fuzzy matching, would be replaced by vector DB/embedding search
-    const matchedProduct = products.find(p => 
-      p.name.toLowerCase().includes(itemName) || 
-      itemName.includes(p.name.toLowerCase()) ||
-      p.tags.some(tag => itemName.includes(tag))
-    );
-    
-    if (matchedProduct) {
-      matchedProducts.push({
-        product: matchedProduct,
-        quantity
-      });
-    } else {
-      unmatchedItems.push(itemName);
-    }
+    // Since we don't have the products array anymore, we'll just add to unmatchedItems
+    unmatchedItems.push(itemName);
   });
   
   return { matchedProducts, unmatchedItems };
 };
 
+// Format currency to INR
 export const formatCurrency = (amount: number): string => {
-  // No need to convert since prices are already in INR
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(amount);
 };
 
+// Calculate total price of items
 export const calculateTotalPrice = (items: { product: Product; quantity: number }[]): number => {
-  return items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  return items.reduce((total, item) => {
+    return total + (item.product.price || 0) * item.quantity;
+  }, 0);
 };

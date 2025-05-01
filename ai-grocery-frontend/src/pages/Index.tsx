@@ -6,9 +6,29 @@ import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import RecommendationSection from '@/components/RecommendationSection';
 import { Button } from '@/components/ui/button';
-import { Product, OrderItem } from '@/lib/mockData';
 import { processNaturalLanguageOrder } from '@/lib/processingUtils';
 import { useProducts } from '@/hooks/useproducts';
+import axios from 'axios';
+
+interface Product {
+  id: string;
+  name?: string;
+  productname?: string;
+  price: number;
+  image?: string;
+  image_url?: string;
+  quantity?: string | number;
+  category?: string;
+  subcategory?: string;
+  description?: string;
+  tags?: string[];
+  inStock?: boolean;
+}
+
+interface OrderItem {
+  product: Product;
+  quantity: number;
+}
 
 const Index = () => {
   const { data: products, isLoading, error } = useProducts();
@@ -28,7 +48,7 @@ const Index = () => {
         ...p,
         name: p.name || p.productname || '',
         image: p.image || p.image_url || '',
-      })).filter((p) => p.name && p.image); // Only keep products with valid name and image
+      })).filter((p) => p.name && p.image);
       setDisplayedProducts(normalized);
     }
   }, [products]);
@@ -41,14 +61,14 @@ const Index = () => {
         ...p,
         name: p.name || p.productname || '',
         image: p.image || p.image_url || '',
-      })).filter((p) => p.name && p.image); // Only keep products with valid name and image
+      })).filter((p) => p.name && p.image);
       setDisplayedProducts(filtered);
     } else if (products) {
       const normalized = products.map((p) => ({
         ...p,
         name: p.name || p.productname || '',
         image: p.image || p.image_url || '',
-      })).filter((p) => p.name && p.image); // Only keep products with valid name and image
+      })).filter((p) => p.name && p.image);
       setDisplayedProducts(normalized);
     }
   }, [searchQuery, products]);
@@ -108,12 +128,114 @@ const Index = () => {
     }
   };
 
-  const handleProcessOrder = () => {
+  const handleProcessOrderLLM = async () => {
     if (!naturalLanguageInput.trim()) return;
-    const { matchedProducts, unmatchedItems } = processNaturalLanguageOrder(naturalLanguageInput);
-    setOrderItems(matchedProducts);
-    setUnmatchedItems(unmatchedItems);
-    setCartProducts(matchedProducts.map(item => item.product));
+    try {
+      // Show loading state
+      console.log("Processing order with input:", naturalLanguageInput);
+      
+      const response = await axios.post('http://localhost:8000/process-order/', {
+        query: naturalLanguageInput,
+      });
+      
+      // Log the full response from the LLM
+      console.log("LLM Response:", JSON.stringify(response.data, null, 2));
+      
+      const llmResults = response.data.result;
+      if (!llmResults || !Array.isArray(llmResults)) {
+        console.error("Invalid response format:", response.data);
+        return;
+      }
+      
+      // First, fetch products if we don't have them yet
+      let productList = products;
+      if (!productList || productList.length === 0) {
+        try {
+          const productsResponse = await axios.get('http://localhost:8000/products');
+          productList = productsResponse.data.products;
+          console.log("Products fetched:", productList);
+        } catch (err) {
+          console.error("Failed to fetch products:", err);
+        }
+      }
+
+      console.log("Available products:", productList);
+      
+      const matchedItems: OrderItem[] = [];
+      const unmatched: string[] = [];
+
+      llmResults.forEach((item: { productname: string; quantity: number | string }) => {
+        console.log("Trying to match product:", item.productname);
+        
+        // Normalize the product name for better matching
+        const normalizedName = item.productname.toLowerCase().trim();
+        
+        // Try exact match first (case insensitive)
+        let match = productList?.find(p => 
+          (p.productname || p.name || '').toLowerCase().trim() === normalizedName
+        );
+        
+        // If no exact match, try partial match with more flexible criteria
+        if (!match) {
+          match = productList?.find(p => {
+            const pName = (p.productname || p.name || '').toLowerCase().trim();
+            return pName.includes(normalizedName) || normalizedName.includes(pName);
+          });
+        }
+        
+        // If still no match, try word-by-word matching
+        if (!match) {
+          const words = normalizedName.split(/\s+/);
+          match = productList?.find(p => {
+            const pName = (p.productname || p.name || '').toLowerCase().trim();
+            // Check if at least half of the words match
+            return words.filter(word => pName.includes(word)).length >= Math.ceil(words.length / 2);
+          });
+        }
+
+        if (match) {
+          console.log("Found matching product:", match);
+          
+          // Convert quantity to number
+          const quantity = typeof item.quantity === 'string' ? 
+            parseInt(item.quantity) || 1 : item.quantity || 1;
+          
+          // Check if this product is already in the cart
+          const existingItem = matchedItems.find(mi => mi.product.id === match?.id);
+          
+          if (existingItem) {
+            // If already in cart, increment quantity
+            existingItem.quantity += quantity;
+            console.log(`Updated quantity for ${match.productname || match.name} to ${existingItem.quantity}`);
+          } else {
+            // Add new item to cart
+            matchedItems.push({
+              product: match,
+              quantity: quantity
+            });
+            console.log(`Added to cart: ${match.productname || match.name} (${quantity})`);
+          }
+        } else {
+          unmatched.push(item.productname);
+          console.warn(`Product not found: ${item.productname}`);
+        }
+      });
+
+      // Update the cart
+      setOrderItems(matchedItems);
+      setCartProducts(matchedItems.map(item => item.product));
+      setUnmatchedItems(unmatched);
+      
+      // Provide user feedback
+      if (matchedItems.length > 0) {
+        console.log(`Added ${matchedItems.length} items to cart`);
+      }
+      if (unmatched.length > 0) {
+        console.warn(`Couldn't find ${unmatched.length} items: ${unmatched.join(', ')}`);
+      }
+    } catch (error) {
+      console.error('LLM order processing failed:', error);
+    }
   };
 
   const handleClearOrder = () => {
@@ -147,7 +269,7 @@ const Index = () => {
                 className="mb-4"
               />
               <div className="flex justify-end">
-                <Button onClick={handleProcessOrder} className="relative overflow-hidden">
+                <Button onClick={handleProcessOrderLLM} className="relative overflow-hidden">
                   Process Order
                 </Button>
               </div>
@@ -186,7 +308,6 @@ const Index = () => {
                 onDecrementQuantity={handleDecrementQuantity}
               />
 
-              {/* Pagination Controls */}
               <div className="flex justify-center items-center mt-6 space-x-2">
                 <span className="text-2xl font-bold text-white mr-2">G</span>
                 {Array.from({ length: totalPages > 10 ? 10 : totalPages }, (_, i) => (
