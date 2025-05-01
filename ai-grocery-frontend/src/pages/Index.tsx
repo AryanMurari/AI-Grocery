@@ -165,7 +165,7 @@ const Index = () => {
       const matchedItems: OrderItem[] = [];
       const unmatched: string[] = [];
 
-      llmResults.forEach((item: { productname: string; quantity: number | string }) => {
+      llmResults.forEach((item: { productname: string; quantity: number | string; packSize?: string; price?: number; category?: string; subcategory?: string }) => {
         console.log("Trying to match product:", item.productname);
         
         // Normalize the product name for better matching
@@ -176,7 +176,7 @@ const Index = () => {
           (p.productname || p.name || '').toLowerCase().trim() === normalizedName
         );
         
-        // If no exact match, try partial match with more flexible criteria
+        // If no match, try partial match with more flexible criteria
         if (!match) {
           match = productList?.find(p => {
             const pName = (p.productname || p.name || '').toLowerCase().trim();
@@ -197,24 +197,46 @@ const Index = () => {
         if (match) {
           console.log("Found matching product:", match);
           
-          // Convert quantity to number
-          const quantity = typeof item.quantity === 'string' ? 
-            parseInt(item.quantity) || 1 : item.quantity || 1;
+          // Convert quantity to number, handling string quantities properly
+          let quantity = 1;
+          if (typeof item.quantity === 'number') {
+            quantity = item.quantity;
+          } else if (typeof item.quantity === 'string') {
+            // Extract just the numeric part if it's a string like "5 kg"
+            const numericPart = item.quantity.match(/^(\d+)/);
+            if (numericPart && numericPart[1]) {
+              quantity = parseInt(numericPart[1]);
+            }
+          }
           
-          // Check if this product is already in the cart
-          const existingItem = matchedItems.find(mi => mi.product.id === match?.id);
+          // Create a unique product identifier that includes both product name and pack size
+          // This ensures products with the same name but different pack sizes are treated as different items
+          const packSize = item.packSize || match.packSize;
+          const uniqueProductId = `${match.id}_${packSize}`.replace(/\s+/g, '_');
+          
+          // Create a modified product object with the unique ID
+          const productWithUniqueId = {
+            ...match,
+            id: uniqueProductId,
+            packSize: packSize
+          };
+          
+          // Check if this product (with specific pack size) is already in the cart
+          const existingItem = matchedItems.find(mi => 
+            mi.product.id === uniqueProductId
+          );
           
           if (existingItem) {
             // If already in cart, increment quantity
             existingItem.quantity += quantity;
-            console.log(`Updated quantity for ${match.productname || match.name} to ${existingItem.quantity}`);
+            console.log(`Updated quantity for ${match.productname || match.name} with pack size ${packSize} to ${existingItem.quantity}`);
           } else {
             // Add new item to cart
             matchedItems.push({
-              product: match,
+              product: productWithUniqueId,
               quantity: quantity
             });
-            console.log(`Added to cart: ${match.productname || match.name} (${quantity})`);
+            console.log(`Added to cart: ${match.productname || match.name} with pack size ${packSize} (${quantity})`);
           }
         } else {
           unmatched.push(item.productname);
@@ -224,8 +246,19 @@ const Index = () => {
 
       // Update the cart
       setOrderItems(matchedItems);
-      setCartProducts(matchedItems.map(item => item.product));
-      setUnmatchedItems(unmatched);
+      
+      // Make sure each product in cartProducts has its packSize information
+      // This ensures products with the same name but different pack sizes are treated as different items
+      setCartProducts(matchedItems.map(item => {
+        // Create a unique ID for each product+packSize combination if needed
+        if (item.product.packSize) {
+          return {
+            ...item.product,
+            id: `${item.product.id}_${item.product.packSize}`.replace(/\s+/g, '_')
+          };
+        }
+        return item.product;
+      }));
       
       // Provide user feedback
       if (matchedItems.length > 0) {

@@ -55,7 +55,7 @@ Extract and return the order as a valid JSON list:
 [
   {{
     "productname": "product name",
-    "quantity": "quantity",
+    "quantity": numeric_quantity_only,
     "metadata": {{
       "packSize": "pack size from metadata",
       "price": "price from metadata",
@@ -69,9 +69,12 @@ Extract and return the order as a valid JSON list:
 Rules:
 - Pick product names EXACTLY as they appear in CONTEXT.
 - Use the metadata information (packSize, price, category, subcategory) exactly as provided in the context.
+- For quantity, ONLY return the numeric value (e.g., "1" not "1 kg"). Units are already specified in packSize.
 - Handle quantities intelligently:
   * If a customer asks for a quantity that doesn't match available package sizes, suggest combinations of available packages.
-  * For example, if they ask for 7kg of onions and you have "Onion" with packSize "5 kg" and "Onion" with packSize "2 kg", suggest both products.
+  * For example, if they ask for 7kg of onions and you have "Onion" with packSize "5 kg" and "Onion" with packSize "2 kg", 
+    return TWO items: one with packSize "5 kg" and quantity "1", and another with packSize "2 kg" and quantity "1".
+  * IMPORTANT: The quantity field should represent how many packages the customer needs, NOT the weight or volume.
   * If they ask for "1 onion" or "2 onions" (without specifying kg), choose the smallest available package.
   * If they ask for an in-between quantity (e.g., "2.5 kg of onion"), round to the nearest available package size or suggest a combination.
 - If quantity not mentioned, default to 1.
@@ -153,12 +156,36 @@ async def process_order(req: OrderRequest):
                         for product_item in response_json:
                             # Check if the product has metadata from LLM
                             if "metadata" in product_item:
-                                # Use the metadata directly from LLM response
+                                # Get product name for database lookup to find image URL
+                                product_name = product_item["productname"]
+                                image_url = ""
+                                
+                                try:
+                                    # Connect to database to get image URL
+                                    conn = sqlite3.connect("products.db")
+                                    cursor = conn.cursor()
+                                    
+                                    # Look up the product to get its image URL
+                                    cursor.execute(
+                                        "SELECT image_url FROM products WHERE lower(productname) LIKE ?", 
+                                        (f"%{product_name.lower()}%",)
+                                    )
+                                    image_result = cursor.fetchone()
+                                    
+                                    if image_result:
+                                        image_url = image_result[0]
+                                        print(f"Found image URL for {product_name}")
+                                    
+                                    conn.close()
+                                except Exception as e:
+                                    print(f"Error looking up image URL: {e}")
+                                
+                                # Use the metadata directly from LLM response plus image URL from DB
                                 final_results.append({
                                     "productname": product_item["productname"],
                                     "quantity": product_item["quantity"],
                                     "price": product_item["metadata"].get("price", ""),
-                                    "image_url": "",  # We don't have image URLs in metadata
+                                    "image_url": image_url,  # Now we include image URL from database
                                     "category": product_item["metadata"].get("category", ""),
                                     "subcategory": product_item["metadata"].get("subcategory", ""),
                                     "packSize": product_item["metadata"].get("packSize", "")

@@ -28,6 +28,7 @@ def load_products_from_csv(filepath):
             price = row.get('Price', '').strip()
             category = row.get('Category', '').strip()
             subcategory = row.get('SubCategory', '').strip()
+            image_url = row.get('Image_Url', '').strip()
 
             if productname:
                 # Store only the product name in the text field
@@ -38,7 +39,8 @@ def load_products_from_csv(filepath):
                     "packSize": packsize,
                     "price": price,
                     "category": category,
-                    "subcategory": subcategory
+                    "subcategory": subcategory,
+                    "image_url": image_url
                 }
                 metadatas.append(metadata)
 
