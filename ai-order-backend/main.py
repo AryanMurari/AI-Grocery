@@ -70,6 +70,16 @@ Rules:
 - Pick product names EXACTLY as they appear in CONTEXT.
 - Use the metadata information (packSize, price, category, subcategory) exactly as provided in the context.
 - For quantity, ONLY return the numeric value (e.g., "1" not "1 kg"). Units are already specified in packSize.
+- Be precise with product matching:
+  * IMPORTANT: You MUST return a product for each item in the query. Never return an empty array.
+  * If a user asks for a generic product (e.g., "milk"), ONLY return the most basic version of that product.
+  * For "milk" without specifying a quantity, look for regular dairy milk products like "GoodLife UHT Treated Toned Milk".
+  * Check the product name and metadata to ensure you're returning the correct product:
+    - For "milk", prioritize products with "Milk" in the subcategory and avoid products like "Coconut Milk".
+    - For "milk", look for regular dairy milk products like "Toned Milk" or "Full Cream Milk".
+    - Do NOT return specialty milks like "Coconut Milk", "Almond Milk", or "Soy Milk" when the user just asks for "milk".
+  * If a user asks for a generic product like  for example "toothpaste", only return ONE basic option, not all available variants.
+  * Only return specific variants if the user explicitly asks for them (e.g., "coconut milk" or "colgate toothpaste").
 - Handle quantities intelligently:
   * If a customer asks for a quantity that doesn't match available package sizes, suggest combinations of available packages.
   * For example, if they ask for 7kg of onions and you have "Onion" with packSize "5 kg" and "Onion" with packSize "2 kg", 
