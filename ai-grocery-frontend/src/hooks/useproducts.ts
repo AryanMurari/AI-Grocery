@@ -10,6 +10,7 @@ interface Product {
   image?: string;
   image_url?: string;
   quantity?: string | number;
+  packSize?: string | number;
   category?: string;
   subcategory?: string;
   description?: string;
@@ -30,6 +31,8 @@ export const useProducts = () => {
         price: p.price || 0,
         image: p.image || p.image_url || '',
         image_url: p.image_url || p.image || '',
+        quantity: p.quantity || '',
+        packSize: p.packSize || '',
         ...p
       }));
     },

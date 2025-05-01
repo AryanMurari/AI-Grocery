@@ -14,6 +14,7 @@ interface Product {
   image?: string;
   image_url?: string;
   quantity?: string | number;
+  packSize?: string | number;
   category?: string;
   subcategory?: string;
   description?: string;
@@ -77,7 +78,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </h3>
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {product.quantity && <span>{product.quantity}</span>}
+          {product.packSize && <span>{product.packSize}</span>}
+          {product.quantity && <span> &middot; {product.quantity}</span>}
           {product.category && <span> &middot; {product.category}</span>}
           {product.subcategory && <span> &middot; {product.subcategory}</span>}
         </div>

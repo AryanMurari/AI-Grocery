@@ -45,7 +45,7 @@ EXTRACT_PROMPT = PromptTemplate(
     input_variables=["context", "query"],
     template="""
 You are an AI grocery assistant.
-Given the CONTEXT of available grocery products:
+Given the CONTEXT of available grocery products with their metadata:
 {context}
 
 And a CUSTOMER QUERY:
@@ -53,15 +53,25 @@ And a CUSTOMER QUERY:
 
 Extract and return the order as a valid JSON list:
 [
-  {{"productname": "product name", "quantity": "quantity"}},
+  {{
+    "productname": "product name",
+    "quantity": "quantity",
+    "metadata": {{
+      "packSize": "pack size from metadata",
+      "price": "price from metadata",
+      "category": "category from metadata",
+      "subcategory": "subcategory from metadata"
+    }}
+  }},
   ...
 ]
 
 Rules:
 - Pick product names EXACTLY as they appear in CONTEXT.
+- Use the metadata information (packSize, price, category, subcategory) exactly as provided in the context.
 - Handle quantities intelligently:
   * If a customer asks for a quantity that doesn't match available package sizes, suggest combinations of available packages.
-  * For example, if they ask for 7kg of onions and you have "Onion 5 kg" and "Onion 2 kg", suggest both products.
+  * For example, if they ask for 7kg of onions and you have "Onion" with packSize "5 kg" and "Onion" with packSize "2 kg", suggest both products.
   * If they ask for "1 onion" or "2 onions" (without specifying kg), choose the smallest available package.
   * If they ask for an in-between quantity (e.g., "2.5 kg of onion"), round to the nearest available package size or suggest a combination.
 - If quantity not mentioned, default to 1.
@@ -114,7 +124,22 @@ async def process_order(req: OrderRequest):
             print(f"\nProcessing item: '{item}'")
             similar_docs = vectordb.similarity_search(item, k=5)
             if similar_docs:
-                context = "\n".join(doc.page_content for doc in similar_docs)
+                # Create context with product names and metadata
+                context_parts = []
+                for doc in similar_docs:
+                    product_name = doc.page_content
+                    metadata = doc.metadata if hasattr(doc, 'metadata') else {}
+                    
+                    # Format metadata for context
+                    metadata_str = ""
+                    if metadata:
+                        metadata_str = "\nMetadata:"
+                        for key, value in metadata.items():
+                            metadata_str += f"\n  {key}: {value}"
+                    
+                    context_parts.append(f"Product Name: {product_name}{metadata_str}")
+                
+                context = "\n---\n".join(context_parts)
                 print(f"Found {len(similar_docs)} similar documents")
                 inputs = {"context": context, "query": item}
                 formatted_prompt = EXTRACT_PROMPT.format_prompt(**inputs)
@@ -124,78 +149,94 @@ async def process_order(req: OrderRequest):
                     response_json = json.loads(response_raw)
                     print(f"LLM extracted: {json.dumps(response_json, indent=2)}")
                     if isinstance(response_json, list):
-                        # Look up the exact product in the database for each extracted item
+                        # Process each product item from LLM response
                         for product_item in response_json:
-                            try:
-                                # Connect to the database to get exact product details
-                                conn = sqlite3.connect("products.db")
-                                cursor = conn.cursor()
-                                
-                                # Extract the base product name without quantity
-                                # For example, "Onion 2 kg" -> "Onion"
-                                product_words = product_item['productname'].lower().split()
-                                base_product_name = product_words[0]  # Usually the first word is the product name
-                                
-                                print(f"Looking for product with base name: '{base_product_name}'")
-                                
-                                # Use more flexible matching to find the product
-                                cursor.execute(
-                                    "SELECT productname, price, image_url, quantity, category, subcategory FROM products WHERE lower(productname) LIKE ?", 
-                                    (f"%{base_product_name}%",)
-                                )
-                                product_rows = cursor.fetchall()
-                                
-                                if product_rows:
-                                    print(f"Found {len(product_rows)} potential matches:")
-                                    for i, row in enumerate(product_rows):
-                                        print(f"  {i+1}. {row[0]}")
+                            # Check if the product has metadata from LLM
+                            if "metadata" in product_item:
+                                # Use the metadata directly from LLM response
+                                final_results.append({
+                                    "productname": product_item["productname"],
+                                    "quantity": product_item["quantity"],
+                                    "price": product_item["metadata"].get("price", ""),
+                                    "image_url": "",  # We don't have image URLs in metadata
+                                    "category": product_item["metadata"].get("category", ""),
+                                    "subcategory": product_item["metadata"].get("subcategory", ""),
+                                    "packSize": product_item["metadata"].get("packSize", "")
+                                })
+                                print(f"Added product with metadata: {product_item['productname']}")
+                            else:
+                                # Fall back to database lookup if no metadata
+                                try:
+                                    # Connect to the database to get exact product details
+                                    conn = sqlite3.connect("products.db")
+                                    cursor = conn.cursor()
                                     
-                                    # Try to find the best match based on the full product name
-                                    best_match_idx = 0
-                                    best_match_score = 0
+                                    # Extract the base product name without quantity
+                                    # For example, "Onion 2 kg" -> "Onion"
+                                    product_words = product_item['productname'].lower().split()
+                                    base_product_name = product_words[0]  # Usually the first word is the product name
                                     
-                                    for i, row in enumerate(product_rows):
-                                        db_product_name = row[0].lower()
-                                        llm_product_name = product_item['productname'].lower()
+                                    print(f"Looking for product with base name: '{base_product_name}'")
+                                    
+                                    # Use more flexible matching to find the product
+                                    cursor.execute(
+                                        "SELECT productname, price, image_url, quantity AS packSize, category, subcategory FROM products WHERE lower(productname) LIKE ?", 
+                                        (f"%{base_product_name}%",)
+                                    )
+                                    product_rows = cursor.fetchall()
+                                    
+                                    if product_rows:
+                                        print(f"Found {len(product_rows)} potential matches:")
+                                        for i, row in enumerate(product_rows):
+                                            print(f"  {i+1}. {row[0]}")
                                         
-                                        # Calculate similarity score (simple word overlap)
-                                        db_words = set(db_product_name.split())
-                                        llm_words = set(llm_product_name.split())
-                                        common_words = db_words.intersection(llm_words)
-                                        score = len(common_words) / max(len(db_words), len(llm_words))
+                                        # Try to find the best match based on the full product name
+                                        best_match_idx = 0
+                                        best_match_score = 0
                                         
-                                        print(f"    Score for '{db_product_name}': {score:.2f}")
+                                        for i, row in enumerate(product_rows):
+                                            db_product_name = row[0].lower()
+                                            llm_product_name = product_item['productname'].lower()
+                                            
+                                            # Calculate similarity score (simple word overlap)
+                                            db_words = set(db_product_name.split())
+                                            llm_words = set(llm_product_name.split())
+                                            common_words = db_words.intersection(llm_words)
+                                            score = len(common_words) / max(len(db_words), len(llm_words))
+                                            
+                                            print(f"    Score for '{db_product_name}': {score:.2f}")
+                                            
+                                            if score > best_match_score:
+                                                best_match_score = score
+                                                best_match_idx = i
                                         
-                                        if score > best_match_score:
-                                            best_match_score = score
-                                            best_match_idx = i
+                                        # Use the best matching product
+                                        keys = ["productname", "price", "image_url", "packSize", "category", "subcategory"]
+                                        product_data = dict(zip(keys, product_rows[best_match_idx]))
+                                        
+                                        print(f"Best match: '{product_data['productname']}' with score {best_match_score:.2f}")
+                                        
+                                        # Add the product data to the result
+                                        final_results.append({
+                                            "productname": product_data["productname"],
+                                            "quantity": product_item["quantity"],
+                                            "price": product_data["price"],
+                                            "image_url": product_data["image_url"],
+                                            "category": product_data["category"],
+                                            "subcategory": product_data["subcategory"],
+                                            "packSize": product_data["packSize"]
+                                        })
+                                        print(f"Added product to results: {product_data['productname']}")
+                                    else:
+                                        # If no match, just use the LLM result
+                                        final_results.append(product_item)
+                                        print(f"No match found for: {product_item['productname']}")
                                     
-                                    # Use the best matching product
-                                    keys = ["productname", "price", "image_url", "quantity", "category", "subcategory"]
-                                    product_data = dict(zip(keys, product_rows[best_match_idx]))
-                                    
-                                    print(f"Best match: '{product_data['productname']}' with score {best_match_score:.2f}")
-                                    
-                                    # Add the product data to the result
-                                    final_results.append({
-                                        "productname": product_data["productname"],
-                                        "quantity": product_item["quantity"],
-                                        "price": product_data["price"],
-                                        "image_url": product_data["image_url"],
-                                        "category": product_data["category"],
-                                        "subcategory": product_data["subcategory"]
-                                    })
-                                    print(f"Added product to results: {product_data['productname']}")
-                                else:
-                                    # If no match, just use the LLM result
+                                    conn.close()
+                                except Exception as db_error:
+                                    print(f"Database error: {db_error}")
+                                    # Fall back to just using the LLM result
                                     final_results.append(product_item)
-                                    print(f"No match found for: {product_item['productname']}")
-                                
-                                conn.close()
-                            except Exception as db_error:
-                                print(f"Database error: {db_error}")
-                                # Fall back to just using the LLM result
-                                final_results.append(product_item)
                 except json.JSONDecodeError:
                     print(f"Failed to parse JSON: {response_raw}")
                     continue  # skip invalid parse
@@ -219,11 +260,11 @@ async def get_products():
     try:
         conn = sqlite3.connect("products.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT productname, price, image_url, quantity, category, subcategory FROM products")
+        cursor.execute("SELECT productname, price, image_url, quantity AS packSize, category, subcategory FROM products")
         rows = cursor.fetchall()
         conn.close()
 
-        keys = ["productname", "price", "image_url", "quantity", "category", "subcategory"]
+        keys = ["productname", "price", "image_url", "packSize", "category", "subcategory"]
         products = [dict(zip(keys, row)) for row in rows]
 
         return {"products": products}

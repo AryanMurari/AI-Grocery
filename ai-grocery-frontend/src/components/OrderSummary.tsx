@@ -13,6 +13,7 @@ interface Product {
   image?: string;
   image_url?: string;
   quantity?: string | number;
+  packSize?: string | number;
   category?: string;
   subcategory?: string;
 }
@@ -76,8 +77,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                       </span>
                       <span className="text-sm font-medium truncate">
                         {item.product.name || item.product.productname}
-                        {item.product.quantity && (
-                          <span className="ml-2 font-normal text-gray-700 whitespace-nowrap">| {item.product.quantity}</span>
+                        {item.product.packSize && (
+                          <span className="ml-2 font-normal text-gray-700 whitespace-nowrap">| {item.product.packSize}</span>
                         )}
                       </span>
                     </div>

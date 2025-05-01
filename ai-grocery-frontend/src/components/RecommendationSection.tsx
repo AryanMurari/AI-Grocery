@@ -10,6 +10,7 @@ interface Product {
   image?: string;
   image_url?: string;
   quantity?: string | number;
+  packSize?: string | number;
   category?: string;
   subcategory?: string;
   description?: string;
