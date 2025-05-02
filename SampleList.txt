@@ -1,0 +1,90 @@
+List 1
+- arisi 5 kilo  
+- doodh 2 ltr  
+- tamatar  
+- pyaaj 1 kg  
+- aloo 3kg  
+- haldi powdr  
+- elachi  
+- atta 10kg  
+- besan  
+- chawal 2kg  
+- toor dal  
+- ghii 1ltr  
+- chiken 1.5 kilo  
+- sugr 500gm  
+- namak
+
+List 2 
+
+- அரிசி 5 கிலோ  
+- பால் 2 லிட்டர்  
+- தக்காளி 1 கிலோ  
+- வெங்காயம் 1 கிலோ  
+- உருளைக்கிழங்கு 3 கிலோ  
+- மஞ்சள் தூள்  
+- ஏலக்காய்  
+- கோதுமை மாவு 10 கிலோ  
+- கடலை மாவு  
+- சோறு அரிசி 2 கிலோ  
+- துவரம் பருப்பு  
+- நெய் 1 லிட்டர்  
+- கோழி மांसம் 1.5 கிலோ  
+- சக்கரை 500 கிராம்  
+- உப்பு  
+
+list 3
+
+- thayir 1 litre  
+- milagai podi  
+- seeni 1 kilo  
+- nenthra pazham 6  
+- thengai 2  
+- karuveppilai  
+- inji  
+- vellam 500 gram  
+- rasam podi  
+- sambar podi  
+- kadugu  
+- ulundhu 1/2 kilo  
+- idli arisi 2 kilo  
+- poondu  
+- pacha milagai
+
+
+List 4
+
+- Wheat flour 5 kg  
+- Basmati rice 2 kg  
+- Moong dal 1 kg  
+- Sunflower oil 1 litre  
+- Salt  
+- Turmeric powder  
+- Black pepper  
+- Tomatoes 1 kg  
+- Green peas 500 g  
+- Butter  
+- Paneer 200 g  
+- Cumin seeds  
+- Coriander leaves  
+- Lemons 4  
+- Bread (1 packet)
+
+
+List 5
+
+- chawal 5kg  
+- atta 10kg  
+- doodh 2 litre  
+- pyaaz 1kg  
+- aloo 2kg  
+- hari mirch  
+- haldi powder  
+- namak  
+- tel 1 litre  
+- biscuit 2 packet  
+- bread  
+- chai patti  
+- cheeni 1kg  
+- sabun  
+- shampoo bottle
