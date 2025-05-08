@@ -1,10 +1,13 @@
 # === main.py ===
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 import os
 import json
 import sqlite3
+import base64
+from io import BytesIO
+from PIL import Image
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -39,6 +42,10 @@ vectordb = Chroma(persist_directory="./chroma_db", embedding_function=embeddings
 
 # === Initialize LLM ===
 llm = ChatOpenAI(model="gpt-4o", api_key=openai_key, temperature=0)
+
+# Initialize OpenAI client for direct API calls
+import openai
+openai_client = openai.OpenAI(api_key=openai_key)
 
 # === Define Prompts ===
 EXTRACT_PROMPT = PromptTemplate(
@@ -116,6 +123,50 @@ def split_items(text):
     return [item.strip() for item in text.split("|") if item.strip()]
 
 # === API endpoint ===
+@app.post("/upload-image/")
+async def upload_image(image: UploadFile = File(...)):
+    try:
+        print(f"Received image upload: {image.filename}")
+        
+        # Read the image file
+        contents = await image.read()
+        print(f"Read image content, size: {len(contents)} bytes")
+        
+        # Convert to base64
+        base64_image = base64.b64encode(contents).decode('utf-8')
+        print(f"Converted image to base64, length: {len(base64_image)}")
+        
+        try:
+            # Call OpenAI Vision API using the client directly
+            print("Calling OpenAI Vision API...")
+            response = openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Extract grocery items from this handwritten or printed list. Format as a simple text list."},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                        ]
+                    }
+                ],
+                max_tokens=300
+            )
+            print("OpenAI API call successful")
+            
+            # Extract the text from the response
+            extracted_text = response.choices[0].message.content
+            print(f"Extracted text: {extracted_text}")
+            
+            return {"extractedText": extracted_text}
+        except Exception as api_error:
+            print(f"OpenAI API error: {str(api_error)}")
+            raise HTTPException(status_code=500, detail=f"OpenAI API error: {str(api_error)}")
+    except Exception as e:
+        print(f"Image processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Image processing error: {str(e)}")
+
+
 @app.post("/process-order/")
 async def process_order(req: OrderRequest):
     try:

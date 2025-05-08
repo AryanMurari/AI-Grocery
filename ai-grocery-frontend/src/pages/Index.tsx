@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
-import InputWithCamera from '@/components/ui/input-with-camera';
+import InputWithImageUpload from '@/components/ui/input-with-image';
 import ProductCard from '@/components/ProductCard';
 import OrderSummary from '@/components/OrderSummary';
 import RecommendationSection from '@/components/RecommendationSection';
@@ -296,8 +296,8 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-8">
             <div className="glassmorphism rounded-xl p-6 animate-fade-in">
               <h2 className="text-xl font-medium mb-4">Create Your Order</h2>
-              <InputWithCamera
-                label="Enter your grocery list or use camera/image upload"
+              <InputWithImageUpload
+                label="Enter your grocery list or use image upload"
                 value={naturalLanguageInput}
                 onInputChange={(value) => setNaturalLanguageInput(value)}
                 className="mb-4"

@@ -1,29 +1,24 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Image, Upload, X, Loader } from 'lucide-react';
+import { Upload, X, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface InputWithCameraProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface InputWithImageUploadProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   onInputChange: (value: string) => void;
   label?: string;
   className?: string;
 }
 
-const InputWithCamera: React.FC<InputWithCameraProps> = ({
+const InputWithImageUpload: React.FC<InputWithImageUploadProps> = ({
   onInputChange,
   label,
   className,
   ...props
 }) => {
-  const [isCameraActive, setIsCameraActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
-  // Toggle camera access
-  const toggleCamera = async () => {
     if (isCameraActive) {
       // Stop camera
       if (videoRef.current && videoRef.current.srcObject) {
@@ -57,40 +52,57 @@ const InputWithCamera: React.FC<InputWithCameraProps> = ({
   };
   
   // Process the selected file
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     setIsUploading(true);
     
+    // Create preview image
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
         setPreviewImage(e.target.result.toString());
-        
-        // Simulate processing delay
-        setTimeout(() => {
-          setIsUploading(false);
-          
-          // Simulate image recognition result
-          const mockRecognizedText = "- 2 avocados\n- 1 loaf of bread\n- 6 eggs\n- Greek yogurt";
-          
-          if (textareaRef.current) {
-            const currentValue = textareaRef.current.value;
-            const newValue = currentValue 
-              ? `${currentValue}\n${mockRecognizedText}` 
-              : mockRecognizedText;
-            textareaRef.current.value = newValue;
-            onInputChange(newValue);
-          }
-        }, 2000);
       }
     };
     reader.readAsDataURL(file);
+    
+    try {
+      // Create form data for upload
+      const formData = new FormData();
+      formData.append("image", file);
+      
+      // Send to backend for processing
+      const response = await fetch('http://localhost:8000/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+      
+      const { extractedText } = await response.json();
+      
+      // Update textarea with extracted text
+      if (textareaRef.current) {
+        const currentValue = textareaRef.current.value;
+        const newValue = currentValue 
+          ? `${currentValue}\n${extractedText}` 
+          : extractedText;
+        textareaRef.current.value = newValue;
+        onInputChange(newValue);
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Failed to process image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
   
   // Take photo from camera
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
     
     setIsUploading(true);
@@ -105,30 +117,47 @@ const InputWithCamera: React.FC<InputWithCameraProps> = ({
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       
       try {
+        // Get image data as base64
         const imgData = canvas.toDataURL('image/jpeg');
         setPreviewImage(imgData);
         
-        // Simulate processing delay
-        setTimeout(() => {
-          setIsUploading(false);
-          
-          // Simulate image recognition result
-          const mockRecognizedText = "- 1 bottle of milk\n- 3 tomatoes\n- Rice\n- Cooking oil";
-          
-          if (textareaRef.current) {
-            const currentValue = textareaRef.current.value;
-            const newValue = currentValue 
-              ? `${currentValue}\n${mockRecognizedText}` 
-              : mockRecognizedText;
-            textareaRef.current.value = newValue;
-            onInputChange(newValue);
-          }
-          
-          // Clean up: close camera after capturing
-          toggleCamera();
-        }, 2000);
+        // Convert base64 to blob for upload
+        const response = await fetch(imgData);
+        const blob = await response.blob();
+        const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+        
+        // Create form data for upload
+        const formData = new FormData();
+        formData.append("image", file);
+        
+        // Send to backend for processing
+        const apiResponse = await fetch('http://localhost:8000/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!apiResponse.ok) {
+          throw new Error(`Server responded with ${apiResponse.status}`);
+        }
+        
+        const { extractedText } = await apiResponse.json();
+        
+        // Update textarea with extracted text
+        if (textareaRef.current) {
+          const currentValue = textareaRef.current.value;
+          const newValue = currentValue 
+            ? `${currentValue}\n${extractedText}` 
+            : extractedText;
+          textareaRef.current.value = newValue;
+          onInputChange(newValue);
+        }
+        
+        // Clean up: close camera after capturing
+        toggleCamera();
       } catch (error) {
-        console.error('Error capturing photo:', error);
+        console.error('Error capturing or processing photo:', error);
+        alert('Failed to process image. Please try again.');
+      } finally {
         setIsUploading(false);
       }
     }

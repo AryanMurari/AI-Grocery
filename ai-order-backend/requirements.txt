@@ -12,3 +12,5 @@ openai
 pandas
 aiofiles
 aiosqlite
+python-multipart
+pillow
