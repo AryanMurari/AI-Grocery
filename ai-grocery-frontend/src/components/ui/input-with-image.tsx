@@ -107,18 +107,18 @@ const InputWithImageUpload: React.FC<InputWithImageUploadProps> = ({
           
           {/* Image preview directly in the textarea */}
           {previewImage && (
-            <div className="absolute bottom-2 left-2 right-2 h-[100px] bg-gray-100 rounded-md overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 bottom-0 bg-gray-100 rounded-md overflow-hidden z-10">
               <img 
                 src={previewImage} 
                 alt="Uploaded list" 
-                className="h-full object-contain mx-auto"
+                className="w-full h-full object-contain mx-auto"
               />
               <button
                 type="button"
-                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-gray-800 bg-opacity-70 flex items-center justify-center text-white"
+                className="absolute top-2 right-2 h-8 w-8 rounded-full bg-gray-800 bg-opacity-70 flex items-center justify-center text-white"
                 onClick={clearPreview}
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             </div>
           )}
