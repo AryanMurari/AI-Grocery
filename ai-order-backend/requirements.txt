@@ -1,16 +1,29 @@
+# Web framework and server
 fastapi
 uvicorn
 python-dotenv
 requests
+python-multipart  # For handling file uploads (both image and audio)
 
+# Database
+# sqlite3 is built-in with Python, no need to install
+aiosqlite
+aiofiles
+
+# LangChain components
 langchain
 langchain-community
 langchain-openai
 chromadb
 
-openai
+# OpenAI integration
+openai>=1.5.0  # Required for newer API features including Whisper
+
+# Data processing
 pandas
-aiofiles
-aiosqlite
-python-multipart
-pillow
+
+# Image processing
+pillow  # For image handling
+
+# Audio processing
+# tempfile and shutil are built-in with Python, no need to install

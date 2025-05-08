@@ -45,6 +45,8 @@ llm = ChatOpenAI(model="gpt-4o", api_key=openai_key, temperature=0)
 
 # Initialize OpenAI client for direct API calls
 import openai
+import tempfile
+import shutil
 openai_client = openai.OpenAI(api_key=openai_key)
 
 # === Define Prompts ===
@@ -123,6 +125,50 @@ def split_items(text):
     return [item.strip() for item in text.split("|") if item.strip()]
 
 # === API endpoint ===
+@app.post("/upload-audio/")
+async def upload_audio(audio: UploadFile = File(...)):
+    try:
+        print(f"Received audio upload: {audio.filename}")
+        
+        # Create a temporary file to store the audio
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
+            # Copy the uploaded file to the temporary file
+            shutil.copyfileobj(audio.file, temp_audio)
+            temp_audio_path = temp_audio.name
+        
+        print(f"Saved audio to temporary file: {temp_audio_path}")
+        
+        try:
+            # Open the temporary file and transcribe using Whisper API
+            print("Calling OpenAI Whisper API...")
+            with open(temp_audio_path, "rb") as audio_file:
+                # Using 'en' as default language, but the API will still detect other languages
+                # ISO-639-1 codes for supported languages: 
+                # en (English), ta (Tamil), te (Telugu), hi (Hindi), gu (Gujarati)
+                response = openai_client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    # Removed 'auto' as it's not valid - Whisper will still auto-detect languages
+                )
+            
+            print("Whisper API call successful")
+            
+            # Extract the transcribed text
+            transcribed_text = response.text
+            print(f"Transcribed text: {transcribed_text}")
+            
+            return {"transcribedText": transcribed_text}
+        except Exception as api_error:
+            print(f"OpenAI Whisper API error: {str(api_error)}")
+            raise HTTPException(status_code=500, detail=f"OpenAI Whisper API error: {str(api_error)}")
+        finally:
+            # Clean up the temporary file
+            import os
+            os.unlink(temp_audio_path)
+    except Exception as e:
+        print(f"Audio processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Audio processing error: {str(e)}")
+
 @app.post("/upload-image/")
 async def upload_image(image: UploadFile = File(...)):
     try:

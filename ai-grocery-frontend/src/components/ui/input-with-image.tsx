@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Loader } from 'lucide-react';
+import { Upload, X, Loader, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import InputWithVoice from './input-with-voice';
 
 interface InputWithImageUploadProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   onInputChange: (value: string) => void;
@@ -123,8 +124,8 @@ const InputWithImageUpload: React.FC<InputWithImageUploadProps> = ({
             </div>
           )}
           
-          {/* Upload button */}
-          <div className="absolute bottom-2 right-2">
+          {/* Upload and Voice buttons */}
+          <div className="absolute bottom-2 right-2 flex space-x-2">
             <Button
               type="button"
               size="icon"
@@ -140,6 +141,19 @@ const InputWithImageUpload: React.FC<InputWithImageUploadProps> = ({
                 <Upload className="h-4 w-4" />
               )}
             </Button>
+            
+            <InputWithVoice 
+              onTranscriptionReceived={(text) => {
+                if (textareaRef.current) {
+                  const currentValue = textareaRef.current.value;
+                  const newValue = currentValue 
+                    ? `${currentValue}\n${text}` 
+                    : text;
+                  textareaRef.current.value = newValue;
+                  onInputChange(newValue);
+                }
+              }}
+            />
           </div>
         </div>
         
